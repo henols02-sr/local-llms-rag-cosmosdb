@@ -11,6 +11,7 @@ This script downloads all content from a specified Atlassian Confluence space us
 - Includes comprehensive logging
 - Rate limiting to respect API limits
 - Error handling and retry logic
+- SSL certificate verification bypass for corporate environments
 
 ## Prerequisites
 
@@ -134,6 +135,12 @@ To generate an API token:
 4. Create a new token with appropriate permissions
 5. Use this token for Bearer authentication
 
+## Security Notice
+
+**SSL Certificate Verification**: This script disables SSL certificate verification to avoid SSL: CERTIFICATE_VERIFY_FAILED errors commonly encountered in corporate environments with self-signed certificates or corporate proxies.
+
+⚠️ **Warning**: Disabling SSL certificate verification reduces security by making the connection vulnerable to man-in-the-middle attacks. Only use this script in trusted network environments.
+
 ## Error Handling
 
 The script includes comprehensive error handling:
@@ -148,8 +155,9 @@ The script includes comprehensive error handling:
 
 The downloader implements rate limiting to be respectful of the Confluence API:
 
-- Default delay of 0.5 seconds between requests
-- Configurable via the `REQUEST_DELAY` setting
+- Default delay of 0 seconds between requests (no delay)
+- Configurable via the `REQUEST_DELAY` environment variable (integer seconds)
+- Set `REQUEST_DELAY=1` to add 1 second delay, or any other integer value
 - Monitors API response headers for rate limit information
 
 ## Troubleshooting
@@ -165,7 +173,12 @@ The downloader implements rate limiting to be respectful of the Confluence API:
    - Verify the space key is correct
    - Check if you have read access to the space
 
-3. **Network Errors**
+3. **SSL Certificate Errors**
+   - SSL certificate verification is automatically disabled
+   - If you still encounter SSL issues, check your network configuration
+   - Contact your IT department about corporate proxy or firewall settings
+
+4. **Network Errors**
    - Check your internet connection
    - Verify the Confluence URL is accessible
    - Check if there are any firewall restrictions

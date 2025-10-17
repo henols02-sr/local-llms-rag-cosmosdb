@@ -16,6 +16,10 @@ import logging
 from datetime import datetime
 import html2text
 from pathlib import Path
+import urllib3
+
+# Disable SSL warnings when certificate verification is disabled
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Configure logging
 logging.basicConfig(
@@ -43,8 +47,12 @@ class ConfluenceDownloader:
         """
         self.base_url = base_url.rstrip('/')
         self.space_key = space_key
-        self.api_base = f"{self.base_url}/rest/api"
+        self.api_base = f"{self.base_url}/rest/api/"
         self.session = requests.Session()
+        
+        # Disable SSL certificate verification to avoid SSL: CERTIFICATE_VERIFY_FAILED errors
+        # WARNING: This reduces security - only use in trusted environments
+        self.session.verify = False
         
         # Setup authentication
         self._setup_authentication(api_token)
@@ -100,7 +108,7 @@ class ConfluenceDownloader:
         all_pages = []
         start = 0
         limit = 50
-        request_delay = os.getenv("REQUEST_DELAY")
+        request_delay = int(os.getenv("REQUEST_DELAY", "0"))
         
         while True:
             endpoint = "content"
@@ -127,7 +135,8 @@ class ConfluenceDownloader:
                 break
                 
             start += limit
-            time.sleep(request_delay)  # Rate limiting
+            if request_delay > 0:
+                time.sleep(request_delay)  # Rate limiting
 
         logger.info(f"Total pages retrieved: {len(all_pages)}")
         return all_pages
@@ -207,6 +216,7 @@ class ConfluenceDownloader:
     def download_space(self):
         """Download all content from the space"""
         logger.info(f"Starting download of Confluence space '{self.space_key}'")
+        logger.warning("SSL certificate verification is disabled for this connection. Use only in trusted environments.")
         
         try:
             # Get space information
@@ -234,6 +244,7 @@ class ConfluenceDownloader:
             # Download each page
             downloaded_pages = []
             failed_pages = []
+            request_delay = int(os.getenv("REQUEST_DELAY", "0"))
             
             for i, page in enumerate(pages, 1):
                 try:
@@ -247,7 +258,8 @@ class ConfluenceDownloader:
                     failed_pages.append({'page': page, 'error': str(e)})
                 
                 # Rate limiting
-                time.sleep(0.5)
+                if request_delay > 0:
+                    time.sleep(request_delay)
             
             # Save summary
             summary = {
