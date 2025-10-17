@@ -33,8 +33,7 @@ Set up authentication (optional):
 cp .env.example .env
 
 # Edit .env with your credentials
-CONFLUENCE_USERNAME=your.email@sr.se
-CONFLUENCE_API_TOKEN=your_api_token
+CONFLUENCE_API_TOKEN=your_bearer_token
 ```
 
 ## Usage
@@ -63,8 +62,7 @@ from confluence_downloader import ConfluenceDownloader
 downloader = ConfluenceDownloader(
     base_url="https://confluence.sr.se",
     space_key="ABC",
-    username="your.email@sr.se",  # Optional
-    api_token="your_api_token"    # Optional
+    api_token="your_bearer_token"    # Optional
 )
 
 # Download all content
@@ -114,8 +112,7 @@ Plain text versions for easy processing, including:
 
 ### Environment Variables
 
-- `CONFLUENCE_USERNAME`: Your Confluence username/email
-- `CONFLUENCE_API_TOKEN`: Your API token
+- `CONFLUENCE_API_TOKEN`: Your Bearer API token
 - `CONFLUENCE_BASE_URL`: Base URL (default: <https://confluence.sr.se>)
 - `CONFLUENCE_SPACE_KEY`: Space key (default: ABC)
 
@@ -123,9 +120,9 @@ Plain text versions for easy processing, including:
 
 You have several options for authentication:
 
-1. **Environment Variables**: Set `CONFLUENCE_USERNAME` and `CONFLUENCE_API_TOKEN`
-2. **Interactive Prompts**: The script will prompt if credentials are not found
-3. **Direct Parameters**: Pass credentials directly to the ConfluenceDownloader constructor
+1. **Environment Variables**: Set `CONFLUENCE_API_TOKEN`
+2. **Interactive Prompts**: The script will prompt if the token is not found
+3. **Direct Parameters**: Pass the token directly to the ConfluenceDownloader constructor
 
 ### API Token Generation
 
@@ -135,6 +132,7 @@ To generate an API token:
 2. Navigate to "Security" → "API tokens"
 3. Click "Create and manage API tokens"
 4. Create a new token with appropriate permissions
+5. Use this token for Bearer authentication
 
 ## Error Handling
 
@@ -159,7 +157,7 @@ The downloader implements rate limiting to be respectful of the Confluence API:
 ### Common Issues
 
 1. **Authentication Failed**
-   - Verify your username and API token
+   - Verify your API token is correct and not expired
    - Check if your account has access to the space
    - Ensure the API token has appropriate permissions
 

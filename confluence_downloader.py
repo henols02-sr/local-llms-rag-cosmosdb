@@ -32,15 +32,14 @@ logger = logging.getLogger(__name__)
 class ConfluenceDownloader:
     """Downloads content from Confluence space using REST API"""
     
-    def __init__(self, base_url: str, space_key: str, username: str = None, api_token: str = None):
+    def __init__(self, base_url: str, space_key: str, api_token: str = None):
         """
         Initialize Confluence downloader
         
         Args:
             base_url: Base URL of Confluence instance (e.g., 'https://confluence.sr.se')
             space_key: Space key to download (e.g., 'ABC')
-            username: Username for authentication (optional, will prompt if needed)
-            api_token: API token for authentication (optional, will prompt if needed)
+            api_token: API token for Bearer authentication (optional, will prompt if needed)
         """
         self.base_url = base_url.rstrip('/')
         self.space_key = space_key
@@ -48,10 +47,11 @@ class ConfluenceDownloader:
         self.session = requests.Session()
         
         # Setup authentication
-        self._setup_authentication(username, api_token)
+        self._setup_authentication(api_token)
         
         # Create output directory
-        self.output_dir = Path(f"confluence_export_{space_key}_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
+        #self.output_dir = Path(f"confluence_export_{space_key}_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
+        self.output_dir = Path(f"confluence_export_{space_key}")
         self.output_dir.mkdir(exist_ok=True)
         
         # HTML to text converter
@@ -59,19 +59,18 @@ class ConfluenceDownloader:
         self.html_converter.ignore_links = False
         self.html_converter.ignore_images = False
         
-    def _setup_authentication(self, username: str = None, api_token: str = None):
-        """Setup authentication for Confluence API"""
-        if not username:
-            username = os.getenv('CONFLUENCE_USERNAME')
-            if not username:
-                username = input("Enter Confluence username/email: ")
-        
+    def _setup_authentication(self, api_token: str = None):
+        """Setup Bearer token authentication for Confluence API"""
         if not api_token:
             api_token = os.getenv('CONFLUENCE_API_TOKEN')
             if not api_token:
                 api_token = input("Enter Confluence API token: ")
         
-        self.session.auth = (username, api_token)
+        # Set up Bearer token authentication
+        self.session.headers.update({
+            'Authorization': f'Bearer {api_token}',
+            'Content-Type': 'application/json'
+        })
         
     def _make_request(self, endpoint: str, params: Dict = None) -> Dict:
         """Make authenticated request to Confluence API"""

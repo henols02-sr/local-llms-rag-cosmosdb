@@ -63,7 +63,6 @@ def integrate_with_existing_rag():
 
 if __name__ == "__main__":
     # Set environment variables if needed
-    # os.environ['CONFLUENCE_USERNAME'] = 'your.email@sr.se'
     # os.environ['CONFLUENCE_API_TOKEN'] = 'your_api_token'
     
     integrate_with_existing_rag()
