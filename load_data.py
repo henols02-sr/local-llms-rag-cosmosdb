@@ -2,6 +2,7 @@ from langchain_text_splitters import MarkdownTextSplitter
 from langchain_community.document_loaders import WebBaseLoader
 import cosmosdb_vector_store
 import logging
+import os
 from typing import List
 
 # Set up logging
@@ -15,8 +16,21 @@ def load(urls: List[str], create_container: bool = True) -> None:
     print("Uploading documents to Azure Cosmos DB", urls)
 
     try:
+        # Get access token from environment variable
+        access_token = os.getenv('ACCESS_TOKEN')
+        
+        # Raise exception if access token is not available
+        if not access_token:
+            raise ValueError("ACCESS_TOKEN environment variable is required but not set")
+        
+        # Prepare headers with bearer token
+        headers = {'Authorization': f'Bearer {access_token}'}
+        
         # Load documents from web
-        loader = WebBaseLoader(urls)
+        loader = WebBaseLoader(
+            web_paths=urls,
+            header_template=headers
+        )
         documents = loader.load()
 
         if not documents:

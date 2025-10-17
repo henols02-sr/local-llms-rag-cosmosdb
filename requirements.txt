@@ -9,3 +9,5 @@ azure-identity
 langchain-ollama
 urllib3
 pypdf
+html2text
+requests
