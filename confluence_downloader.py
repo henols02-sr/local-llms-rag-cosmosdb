@@ -100,6 +100,7 @@ class ConfluenceDownloader:
         all_pages = []
         start = 0
         limit = 50
+        request_delay = os.getenv("REQUEST_DELAY")
         
         while True:
             endpoint = "content"
@@ -126,8 +127,8 @@ class ConfluenceDownloader:
                 break
                 
             start += limit
-            time.sleep(0.5)  # Rate limiting
-            
+            time.sleep(request_delay)  # Rate limiting
+
         logger.info(f"Total pages retrieved: {len(all_pages)}")
         return all_pages
     
