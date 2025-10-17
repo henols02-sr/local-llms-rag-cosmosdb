@@ -21,16 +21,46 @@ import urllib3
 # Disable SSL warnings when certificate verification is disabled
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('confluence_download.log'),
-        logging.StreamHandler()
-    ]
-)
+# Configure logging with UTF-8 encoding to handle Unicode characters
+# Set console to use UTF-8 encoding on Windows
+import sys
+if sys.platform == "win32":
+    # Try to set console to UTF-8 mode
+    try:
+        import subprocess
+        subprocess.run(['chcp', '65001'], shell=True, capture_output=True, check=False)
+    except Exception:
+        # If setting console encoding fails, continue anyway
+        pass
+
+try:
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler('confluence_download.log', encoding='utf-8'),
+            logging.StreamHandler()
+        ]
+    )
+except Exception:
+    # Fallback logging configuration if UTF-8 setup fails
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s'
+    )
 logger = logging.getLogger(__name__)
+
+
+def safe_log_title(title: str) -> str:
+    """Safely encode page title for logging to avoid Unicode errors"""
+    try:
+        # Replace problematic Unicode characters with safe ASCII equivalents
+        # This approach is more aggressive but ensures compatibility
+        safe_title = title.encode('ascii', 'replace').decode('ascii')
+        return safe_title
+    except Exception:
+        # Ultimate fallback: keep only basic ASCII characters
+        return ''.join(c if ord(c) < 128 and c.isprintable() else '?' for c in str(title))
 
 
 class ConfluenceDownloader:
@@ -59,8 +89,8 @@ class ConfluenceDownloader:
         
         # Create output directory
         #self.output_dir = Path(f"confluence_export_{space_key}_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
-        self.output_dir = Path(f"confluence_export_{space_key}")
-        self.output_dir.mkdir(exist_ok=True)
+        self.output_dir = Path(f"confluence_export/{space_key}")
+        self.output_dir.mkdir(exist_ok=True, parents=True)
         
         # HTML to text converter
         self.html_converter = html2text.HTML2Text()
@@ -145,8 +175,9 @@ class ConfluenceDownloader:
         """Download and process individual page content"""
         page_id = page['id']
         title = page['title']
+        safe_title = safe_log_title(title)
         
-        logger.info(f"Processing page: {title} (ID: {page_id})")
+        logger.info(f"Processing page: {safe_title} (ID: {page_id})")
         
         # Get full page content
         endpoint = f"content/{page_id}"
@@ -248,13 +279,15 @@ class ConfluenceDownloader:
             
             for i, page in enumerate(pages, 1):
                 try:
-                    logger.info(f"Processing page {i}/{len(pages)}: {page['title']}")
+                    safe_title = safe_log_title(page['title'])
+                    logger.info(f"Processing page {i}/{len(pages)}: {safe_title}")
                     page_data = self.download_page_content(page)
                     self.save_page_data(page_data)
                     downloaded_pages.append(page_data)
                     
                 except Exception as e:
-                    logger.error(f"Failed to process page '{page['title']}': {e}")
+                    safe_title = safe_log_title(page['title'])
+                    logger.error(f"Failed to process page '{safe_title}': {e}")
                     failed_pages.append({'page': page, 'error': str(e)})
                 
                 # Rate limiting
