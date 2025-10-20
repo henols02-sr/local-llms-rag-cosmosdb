@@ -232,17 +232,17 @@ class ConfluenceDownloader:
             json.dump(page_data, f, indent=2, ensure_ascii=False)
         
         # Save plain text content
-        txt_file = self.output_dir / f"{page_id}_{safe_title}.txt"
-        with open(txt_file, 'w', encoding='utf-8') as f:
-            f.write(f"Title: {title}\n")
-            f.write(f"Space: {page_data['space_key']}\n")
-            f.write(f"URL: {page_data['url']}\n")
-            f.write(f"Hierarchy: {page_data['hierarchy_path']}\n")
-            f.write(f"Author: {page_data['author']}\n")
-            f.write(f"Modified: {page_data['modified_date']}\n")
-            f.write(f"Labels: {', '.join(page_data['labels'])}\n")
-            f.write("="*80 + "\n\n")
-            f.write(page_data['plain_text'])
+        # txt_file = self.output_dir / f"{page_id}_{safe_title}.txt"
+        # with open(txt_file, 'w', encoding='utf-8') as f:
+        #     f.write(f"Title: {title}\n")
+        #     f.write(f"Space: {page_data['space_key']}\n")
+        #     f.write(f"URL: {page_data['url']}\n")
+        #     f.write(f"Hierarchy: {page_data['hierarchy_path']}\n")
+        #     f.write(f"Author: {page_data['author']}\n")
+        #     f.write(f"Modified: {page_data['modified_date']}\n")
+        #     f.write(f"Labels: {', '.join(page_data['labels'])}\n")
+        #     f.write("="*80 + "\n\n")
+        #     f.write(page_data['plain_text'])
     
     def download_space(self):
         """Download all content from the space"""
@@ -321,20 +321,50 @@ def main():
     """Main function to run the Confluence downloader"""
     # Configuration
     BASE_URL = "https://confluence.sr.se"
-    SPACE_KEY = "ABC"
+    
+    # Get space keys from environment variable or use default
+    env_spaces = os.getenv('CONFLUENCE_SPACE_KEYS', 'ABC,DC,CHEF') # ITS is very large
+    SPACE_KEYS = [space.strip() for space in env_spaces.split(',')]
     
     print("Confluence Space Content Downloader")
     print("===================================")
     print(f"Base URL: {BASE_URL}")
-    print(f"Space Key: {SPACE_KEY}")
+    print(f"Space Keys: {', '.join(SPACE_KEYS)}")
     print()
     
+    successful_downloads = []
+    failed_downloads = []
+    
     try:
-        # Create downloader instance
-        downloader = ConfluenceDownloader(BASE_URL, SPACE_KEY)
+        for space_key in SPACE_KEYS:
+            try:
+                print(f"\n{'='*50}")
+                print(f"Downloading space: {space_key}")
+                print(f"{'='*50}")
+                
+                # Create downloader instance for each space
+                downloader = ConfluenceDownloader(BASE_URL, space_key)
+                # Start download
+                downloader.download_space()
+                successful_downloads.append(space_key)
+                
+            except Exception as e:
+                logger.error(f"Failed to download space '{space_key}': {e}")
+                failed_downloads.append({"space": space_key, "error": str(e)})
+                print(f"Error downloading space '{space_key}': {e}")
+                continue
         
-        # Start download
-        downloader.download_space()
+        # Print final summary
+        print(f"\n{'='*50}")
+        print("DOWNLOAD SUMMARY")
+        print(f"{'='*50}")
+        print(f"Successfully downloaded: {len(successful_downloads)} spaces")
+        if successful_downloads:
+            print(f"  - {', '.join(successful_downloads)}")
+        print(f"Failed downloads: {len(failed_downloads)} spaces")
+        if failed_downloads:
+            for failed in failed_downloads:
+                print(f"  - {failed['space']}: {failed['error']}")
         
     except KeyboardInterrupt:
         print("\nDownload interrupted by user")

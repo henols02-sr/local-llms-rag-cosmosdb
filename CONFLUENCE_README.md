@@ -41,7 +41,7 @@ CONFLUENCE_API_TOKEN=your_bearer_token
 
 ### Basic Usage
 
-Run the script directly to download content from the "ABC" space:
+Run the script directly to download content from multiple Confluence spaces (ABC, ITS, DC, CHEF):
 
 ```bash
 python confluence_downloader.py
@@ -51,8 +51,8 @@ The script will:
 
 1. Prompt for credentials if not set in environment variables
 2. Connect to the Confluence instance
-3. Download all pages from the "ABC" space
-4. Save content to a timestamped directory
+3. Download all pages from multiple spaces (ABC, ITS, DC, CHEF)
+4. Save content to organized directories under `confluence_export/`
 
 ### Programmatic Usage
 
@@ -70,24 +70,42 @@ downloader = ConfluenceDownloader(
 downloader.download_space()
 ```
 
+### Customizing Spaces
+
+You can customize which spaces to download by setting the `CONFLUENCE_SPACE_KEYS` environment variable:
+
+```bash
+# Download different spaces
+CONFLUENCE_SPACE_KEYS="DEV,PROD,DOCS" python confluence_downloader.py
+
+# Or set in .env file
+CONFLUENCE_SPACE_KEYS=DEV,PROD,DOCS
+```
+
 ### Integration with RAG Pipeline
 
 See `confluence_integration_example.py` for examples of how to integrate the downloaded content with your existing RAG application.
 
 ## Output Structure
 
-The downloader creates a timestamped directory with the following structure:
+The downloader creates organized directories for each space with the following structure:
 
-```
-confluence_export_ABC_20241017_143022/
-├── space_metadata.json          # Space information and metadata
-├── download_summary.json        # Summary of download results
-├── confluence_download.log      # Detailed log file
-├── 12345_Page_Title.json        # Page data in JSON format
-├── 12345_Page_Title.txt         # Page content in plain text
-├── 67890_Another_Page.json
-├── 67890_Another_Page.txt
-└── ...
+```text
+confluence_export/
+├── ABC/
+│   ├── space_metadata.json          # Space information and metadata
+│   ├── download_summary.json        # Summary of download results
+│   ├── 12345_Page_Title.json        # Page data in JSON format
+│   └── 67890_Another_Page.json
+├── ITS/
+│   ├── space_metadata.json
+│   ├── download_summary.json
+│   └── *.json files...
+├── DC/
+│   └── *.json files...
+├── CHEF/
+│   └── *.json files...
+└── confluence_download.log          # Detailed log file
 ```
 
 ### File Formats
