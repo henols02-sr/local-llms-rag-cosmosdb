@@ -12,7 +12,6 @@ import requests
 import time
 from typing import Dict, List, Optional
 from urllib.parse import urljoin
-import logging
 from datetime import datetime
 import html2text
 from pathlib import Path
@@ -21,38 +20,9 @@ import urllib3
 # Disable SSL warnings when certificate verification is disabled
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# Configure logging with UTF-8 encoding to handle Unicode characters
-# Set console to use UTF-8 encoding on Windows
-import sys
-if sys.platform == "win32":
-    # Try to set console to UTF-8 mode
-    try:
-        import subprocess
-        subprocess.run(['chcp', '65001'], shell=True, capture_output=True, check=False)
-    except Exception:
-        # If setting console encoding fails, continue anyway
-        pass
-
-try:
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler('confluence_download.log', encoding='utf-8'),
-            logging.StreamHandler()
-        ]
-    )
-except Exception:
-    # Fallback logging configuration if UTF-8 setup fails
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s'
-    )
-logger = logging.getLogger(__name__)
-
 
 def safe_log_title(title: str) -> str:
-    """Safely encode page title for logging to avoid Unicode errors"""
+    """Safely encode page title for console output to avoid Unicode errors"""
     try:
         # Replace problematic Unicode characters with safe ASCII equivalents
         # This approach is more aggressive but ensures compatibility
@@ -119,12 +89,12 @@ class ConfluenceDownloader:
             response.raise_for_status()
             return response.json()
         except requests.RequestException as e:
-            logger.error(f"API request failed: {e}")
+            print(f"ERROR: API request failed: {e}")
             raise
             
     def get_space_info(self) -> Dict:
         """Get information about the space"""
-        logger.info(f"Getting space information for '{self.space_key}'")
+        print(f"Getting space information for '{self.space_key}'")
         endpoint = f"space/{self.space_key}"
         params = {
             'expand': 'description,homepage'
@@ -133,7 +103,7 @@ class ConfluenceDownloader:
     
     def get_all_pages(self) -> List[Dict]:
         """Get all pages from the space"""
-        logger.info(f"Fetching all pages from space '{self.space_key}'")
+        print(f"Fetching all pages from space '{self.space_key}'")
         
         all_pages = []
         start = 0
@@ -158,7 +128,7 @@ class ConfluenceDownloader:
                 break
                 
             all_pages.extend(pages)
-            logger.info(f"Retrieved {len(pages)} pages (total: {len(all_pages)})")
+            print(f"Retrieved {len(pages)} pages (total: {len(all_pages)})")
             
             # Check if there are more pages
             if len(pages) < limit:
@@ -168,7 +138,7 @@ class ConfluenceDownloader:
             if request_delay > 0:
                 time.sleep(request_delay)  # Rate limiting
 
-        logger.info(f"Total pages retrieved: {len(all_pages)}")
+        print(f"Total pages retrieved: {len(all_pages)}")
         return all_pages
     
     def download_page_content(self, page: Dict) -> Dict:
@@ -177,7 +147,7 @@ class ConfluenceDownloader:
         title = page['title']
         safe_title = safe_log_title(title)
         
-        logger.info(f"Processing page: {safe_title} (ID: {page_id})")
+        print(f"Processing page: {safe_title} (ID: {page_id})")
         
         # Get full page content
         endpoint = f"content/{page_id}"
@@ -246,13 +216,13 @@ class ConfluenceDownloader:
     
     def download_space(self):
         """Download all content from the space"""
-        logger.info(f"Starting download of Confluence space '{self.space_key}'")
-        logger.warning("SSL certificate verification is disabled for this connection. Use only in trusted environments.")
+        print(f"Starting download of Confluence space '{self.space_key}'")
+        print("WARNING: SSL certificate verification is disabled for this connection. Use only in trusted environments.")
         
         try:
             # Get space information
             space_info = self.get_space_info()
-            logger.info(f"Space name: {space_info.get('name', 'Unknown')}")
+            print(f"Space name: {space_info.get('name', 'Unknown')}")
             
             # Save space metadata
             space_metadata = {
@@ -269,7 +239,7 @@ class ConfluenceDownloader:
             pages = self.get_all_pages()
             
             if not pages:
-                logger.warning("No pages found in the space")
+                print("WARNING: No pages found in the space")
                 return
             
             # Download each page
@@ -280,14 +250,14 @@ class ConfluenceDownloader:
             for i, page in enumerate(pages, 1):
                 try:
                     safe_title = safe_log_title(page['title'])
-                    logger.info(f"Processing page {i}/{len(pages)}: {safe_title}")
+                    print(f"Processing page {i}/{len(pages)}: {safe_title}")
                     page_data = self.download_page_content(page)
                     self.save_page_data(page_data)
                     downloaded_pages.append(page_data)
                     
                 except Exception as e:
                     safe_title = safe_log_title(page['title'])
-                    logger.error(f"Failed to process page '{safe_title}': {e}")
+                    print(f"ERROR: Failed to process page '{safe_title}': {e}")
                     failed_pages.append({'page': page, 'error': str(e)})
                 
                 # Rate limiting
@@ -307,13 +277,13 @@ class ConfluenceDownloader:
             with open(self.output_dir / 'download_summary.json', 'w', encoding='utf-8') as f:
                 json.dump(summary, f, indent=2, ensure_ascii=False)
             
-            logger.info(f"Download completed!")
-            logger.info(f"Downloaded: {len(downloaded_pages)} pages")
-            logger.info(f"Failed: {len(failed_pages)} pages")
-            logger.info(f"Output directory: {self.output_dir}")
+            print(f"Download completed!")
+            print(f"Downloaded: {len(downloaded_pages)} pages")
+            print(f"Failed: {len(failed_pages)} pages")
+            print(f"Output directory: {self.output_dir}")
             
         except Exception as e:
-            logger.error(f"Download failed: {e}")
+            print(f"ERROR: Download failed: {e}")
             raise
 
 
@@ -349,7 +319,7 @@ def main():
                 successful_downloads.append(space_key)
                 
             except Exception as e:
-                logger.error(f"Failed to download space '{space_key}': {e}")
+                print(f"ERROR: Failed to download space '{space_key}': {e}")
                 failed_downloads.append({"space": space_key, "error": str(e)})
                 print(f"Error downloading space '{space_key}': {e}")
                 continue
@@ -369,7 +339,7 @@ def main():
     except KeyboardInterrupt:
         print("\nDownload interrupted by user")
     except Exception as e:
-        logger.error(f"Download failed: {e}")
+        print(f"ERROR: Download failed: {e}")
         print(f"Error: {e}")
 
 

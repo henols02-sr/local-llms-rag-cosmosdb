@@ -8,7 +8,7 @@ This script downloads all content from a specified Atlassian Confluence space us
 - Converts HTML content to plain text for better processing
 - Preserves page hierarchy and metadata
 - Saves content in multiple formats (JSON and text)
-- Includes comprehensive logging
+- Console output for progress tracking
 - Rate limiting to respect API limits
 - Error handling and retry logic
 - SSL certificate verification bypass for corporate environments
@@ -103,9 +103,8 @@ confluence_export/
 │   └── *.json files...
 ├── DC/
 │   └── *.json files...
-├── CHEF/
-│   └── *.json files...
-└── confluence_download.log          # Detailed log file
+└── CHEF/
+    └── *.json files...
 ```
 
 ### File Formats
@@ -167,7 +166,7 @@ The script includes comprehensive error handling:
 - **Authentication Errors**: Clear error messages and guidance
 - **Rate Limiting**: Respects API rate limits with configurable delays
 - **Partial Failures**: Continues processing even if individual pages fail
-- **Logging**: Detailed logs for troubleshooting
+- **Console Output**: Real-time progress and error information
 
 ## Rate Limiting
 
@@ -201,14 +200,14 @@ The downloader implements rate limiting to be respectful of the Confluence API:
    - Verify the Confluence URL is accessible
    - Check if there are any firewall restrictions
 
-### Logging
+### Console Output
 
-Check the `confluence_download.log` file for detailed information about:
+The script provides real-time console output with information about:
 
-- API requests and responses
-- Processing progress
-- Error details
-- Performance metrics
+- Processing progress for each space and page
+- Error details when pages fail to download
+- Final summary of successful and failed downloads
+- Performance and timing information
 
 ## Integration with Existing RAG Application
 
