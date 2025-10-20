@@ -10,7 +10,7 @@ import os
 import json
 import requests
 import time
-from typing import Dict, List, Optional
+from typing import Dict, List
 from urllib.parse import urljoin
 from datetime import datetime
 import html2text
@@ -19,19 +19,6 @@ import urllib3
 
 # Disable SSL warnings when certificate verification is disabled
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-
-def safe_log_title(title: str) -> str:
-    """Safely encode page title for console output to avoid Unicode errors"""
-    try:
-        # Replace problematic Unicode characters with safe ASCII equivalents
-        # This approach is more aggressive but ensures compatibility
-        safe_title = title.encode('ascii', 'replace').decode('ascii')
-        return safe_title
-    except Exception:
-        # Ultimate fallback: keep only basic ASCII characters
-        return ''.join(c if ord(c) < 128 and c.isprintable() else '?' for c in str(title))
-
 
 class ConfluenceDownloader:
     """Downloads content from Confluence space using REST API"""
@@ -145,9 +132,6 @@ class ConfluenceDownloader:
         """Download and process individual page content"""
         page_id = page['id']
         title = page['title']
-        safe_title = safe_log_title(title)
-        
-        print(f"Processing page: {safe_title} (ID: {page_id})")
         
         # Get full page content
         endpoint = f"content/{page_id}"
@@ -249,15 +233,13 @@ class ConfluenceDownloader:
             
             for i, page in enumerate(pages, 1):
                 try:
-                    safe_title = safe_log_title(page['title'])
-                    print(f"Processing page {i}/{len(pages)}: {safe_title}")
+                    print(f"Processing page {i}/{len(pages)}: {page['title']} ({page['id']})")
                     page_data = self.download_page_content(page)
                     self.save_page_data(page_data)
                     downloaded_pages.append(page_data)
                     
                 except Exception as e:
-                    safe_title = safe_log_title(page['title'])
-                    print(f"ERROR: Failed to process page '{safe_title}': {e}")
+                    print(f"ERROR: Failed to process page '{page['title']}': {e}")
                     failed_pages.append({'page': page, 'error': str(e)})
                 
                 # Rate limiting
